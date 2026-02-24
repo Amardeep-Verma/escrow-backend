@@ -14,6 +14,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import org.springframework.web.cors.CorsConfigurationSource;
+
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -21,25 +23,26 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    // ✅ Inject CORS configuration bean
+    private final CorsConfigurationSource corsConfigurationSource;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                // ✅ Disable CSRF (REST API)
+                // ✅ Disable CSRF for REST API
                 .csrf(csrf -> csrf.disable())
 
-                // ✅ Enable CORS
-                .cors(cors -> {})
+                // ✅ IMPORTANT: Attach CorsConfig to Spring Security
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
 
                 // ✅ Authorization Rules
                 .authorizeHttpRequests(auth -> auth
-
-                        // ✅ AUTH endpoints PUBLIC
                         .requestMatchers(
                                 "/auth/**",
                                 "/error",
 
-                                // Swagger
+                                // Swagger endpoints
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
@@ -47,7 +50,6 @@ public class SecurityConfig {
                                 "/webjars/**"
                         ).permitAll()
 
-                        // ✅ everything else requires JWT
                         .anyRequest().authenticated()
                 )
 
@@ -56,7 +58,7 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-                // ✅ Add JWT filter
+                // ✅ JWT Filter
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
@@ -65,7 +67,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // ✅ Password Encoder Bean
+    // ✅ Password encoder
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
