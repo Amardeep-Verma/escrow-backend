@@ -43,10 +43,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneralException(Exception ex) {
 
+        ex.printStackTrace(); // ⭐ shows real error in Render logs
+
         ApiError error = new ApiError(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "Internal Server Error",
-                "Something went wrong"
+                ex.getMessage()   // ⭐ SHOW REAL ERROR
         );
 
         return ResponseEntity
