@@ -24,6 +24,14 @@ public class EscrowService {
                                Double amount,
                                String productName) {
 
+        if (amount == null || amount <= 0) {
+            throw new RuntimeException("Amount must be greater than 0");
+        }
+
+        if (productName == null || productName.isBlank()) {
+            throw new RuntimeException("Product name is required");
+        }
+
         User buyer = userRepository.findByEmail(buyerEmail)
                 .orElseThrow(() -> new RuntimeException("Buyer not found"));
 
@@ -68,22 +76,21 @@ public class EscrowService {
                 .orElseThrow(() -> new RuntimeException("Escrow not found"));
 
         if (!escrow.getSellerEmail().equals(sellerEmail)) {
-            throw new RuntimeException("Only assigned seller can update shipment");
+            throw new RuntimeException("Only assigned seller can ship product");
         }
 
-        // workflow validation
-        if (!escrow.getEscrowStatus().equals("CREATED")) {
+        if (!"CREATED".equals(escrow.getEscrowStatus())) {
             throw new RuntimeException("Escrow must be CREATED before shipping");
         }
 
-        if (escrow.getShipmentStatus().equals("SHIPPED")) {
+        if ("SHIPPED".equals(escrow.getShipmentStatus())) {
             throw new RuntimeException("Product already shipped");
         }
 
-        // ✅ update shipment
+        // update shipment
         escrow.setShipmentStatus("SHIPPED");
 
-        // ✅ IMPORTANT FIX — MOVE ESCROW STATE
+        // move escrow lifecycle
         escrow.setEscrowStatus("FUNDED");
 
         return escrowRepository.save(escrow);
@@ -99,18 +106,18 @@ public class EscrowService {
             throw new RuntimeException("Only buyer can confirm delivery");
         }
 
-        if (!escrow.getShipmentStatus().equals("SHIPPED")) {
+        if (!"SHIPPED".equals(escrow.getShipmentStatus())) {
             throw new RuntimeException("Product must be shipped first");
         }
 
-        if (escrow.getEscrowStatus().equals("RELEASED")) {
+        if ("RELEASED".equals(escrow.getEscrowStatus())) {
             throw new RuntimeException("Escrow already completed");
         }
 
-        // ✅ update delivery
+        // update delivery
         escrow.setShipmentStatus("DELIVERED");
 
-        // ✅ release payment
+        // release payment
         escrow.setEscrowStatus("RELEASED");
 
         return escrowRepository.save(escrow);

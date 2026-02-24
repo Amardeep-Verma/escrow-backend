@@ -1,6 +1,7 @@
 package com.escrow.escrowbackend.controller;
 
 import com.escrow.escrowbackend.common.ApiResponse;
+import com.escrow.escrowbackend.dto.CreateEscrowRequest;
 import com.escrow.escrowbackend.entity.Escrow;
 import com.escrow.escrowbackend.service.EscrowService;
 import lombok.RequiredArgsConstructor;
@@ -23,18 +24,16 @@ public class EscrowController {
     @PostMapping("/create")
     public ResponseEntity<ApiResponse<Escrow>> createEscrow(
             Authentication authentication,
-            @RequestParam String sellerEmail,
-            @RequestParam Double amount,
-            @RequestParam String productName
+            @RequestBody CreateEscrowRequest request
     ) {
 
         String buyerEmail = authentication.getName();
 
         Escrow escrow = escrowService.createEscrow(
                 buyerEmail,
-                sellerEmail,
-                amount,
-                productName
+                request.getSellerEmail(),
+                request.getAmount(),
+                request.getProductName()
         );
 
         return ResponseEntity.ok(
