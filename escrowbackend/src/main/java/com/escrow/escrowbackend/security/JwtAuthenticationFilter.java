@@ -22,39 +22,34 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserRepository userRepository;
 
+    /**
+     * ✅ Skip JWT filter for public endpoints
+     */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
 
         String path = request.getServletPath();
 
-        return path.startsWith("/api/auth")
+        return path.startsWith("/api/auth")     // login + register
+                || path.startsWith("/error")
                 || path.startsWith("/v3/api-docs")
-                || path.contains("/swagger-ui")
-                || path.contains("/swagger-resources")
-                || path.contains("/webjars");
+                || path.startsWith("/swagger-ui")
+                || path.startsWith("/swagger-resources")
+                || path.startsWith("/webjars");
     }
 
+    /**
+     * ✅ JWT validation logic
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        String path = request.getRequestURI();
-
-        // ✅ VERY IMPORTANT — SKIP PUBLIC ENDPOINTS
-        if (path.startsWith("/api/auth")
-                || path.startsWith("/v3/api-docs")
-                || path.startsWith("/swagger-ui")
-                || path.startsWith("/swagger-resources")
-                || path.startsWith("/webjars")) {
-
-            filterChain.doFilter(request, response);
-            return;
-        }
-
         final String authHeader = request.getHeader("Authorization");
 
+        // No token → continue request
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
