@@ -26,13 +26,13 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
-                // ✅ Disable CSRF (JWT APIs)
+                .cors(cors -> {})
                 .csrf(csrf -> csrf.disable())
 
                 // ✅ Authorization rules
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/auth/**",        
+                                "/auth/**",
                                 "/api/auth/**",
                                 "/test-error",
 
