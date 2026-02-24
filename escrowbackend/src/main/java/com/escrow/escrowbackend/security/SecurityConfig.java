@@ -34,10 +34,10 @@ public class SecurityConfig {
                 // ✅ Authorization Rules
                 .authorizeHttpRequests(auth -> auth
 
-                        // ⭐ VERY IMPORTANT — AUTH endpoints PUBLIC
+                        // ⭐ IMPORTANT — AUTH endpoints PUBLIC
                         .requestMatchers(
-                                "/auth/**",          // login + register
-                                "/error",            // spring error path
+                                "/api/auth/**",     // ✅ FIXED (was /auth/**)
+                                "/error",
 
                                 // Swagger
                                 "/swagger-ui/**",
@@ -47,16 +47,16 @@ public class SecurityConfig {
                                 "/webjars/**"
                         ).permitAll()
 
-                        // ✅ everything else protected
+                        // ✅ everything else requires JWT
                         .anyRequest().authenticated()
                 )
 
-                // ✅ Stateless JWT sessions
+                // ✅ Stateless JWT session
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-                // ✅ Add JWT filter BEFORE UsernamePassword filter
+                // ✅ Add JWT filter
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
@@ -65,7 +65,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // ✅ Password encoder bean
+    // ✅ Password Encoder Bean
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
