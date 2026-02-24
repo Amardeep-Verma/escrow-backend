@@ -32,10 +32,10 @@ public class SecurityConfig {
                 // ✅ Authorization rules
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                "/auth/**",        
                                 "/api/auth/**",
                                 "/test-error",
 
-                                // Swagger endpoints
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
