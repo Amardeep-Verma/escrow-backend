@@ -22,14 +22,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final UserRepository userRepository;
 
     /**
-     * ✅ Skip JWT filter for public endpoints
+     * ✅ Skip JWT filter for PUBLIC endpoints
      */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
 
         String path = request.getServletPath();
 
-        return path.startsWith("/api/auth")
+        return path.startsWith("/auth")               // ✅ LOGIN & REGISTER
                 || path.startsWith("/error")
                 || path.startsWith("/v3/api-docs")
                 || path.startsWith("/swagger-ui")
@@ -48,7 +48,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
 
-        // ✅ No token → continue
+        // ✅ No token → continue request
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -57,27 +57,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = authHeader.substring(7);
         String email = jwtService.extractEmail(token);
 
+        // ✅ Authenticate user if not already authenticated
         if (email != null &&
                 SecurityContextHolder.getContext().getAuthentication() == null) {
 
             User user = userRepository.findByEmail(email).orElse(null);
 
-            // ✅ Validate token + user
+            // ✅ Validate token + user exists
             if (user != null && jwtService.isTokenValid(token)) {
 
-                // ⭐ IMPORTANT FIX:
-                // Store FULL USER object as principal
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
-                                user,                    // ✅ principal (UserDetails)
+                                user,                   // principal
                                 null,
-                                user.getAuthorities()    // ✅ roles
+                                user.getAuthorities()   // roles
                         );
 
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }
 
+        // ✅ Continue filter chain
         filterChain.doFilter(request, response);
     }
 }
