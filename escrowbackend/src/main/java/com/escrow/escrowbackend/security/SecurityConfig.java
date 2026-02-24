@@ -16,26 +16,30 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                .cors(cors -> {})
+                // ✅ Disable CSRF (REST API)
                 .csrf(csrf -> csrf.disable())
 
-                // ✅ Authorization rules
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/auth/**",
-                                "/api/auth/**",
-                                "/test-error",
+                // ✅ Enable CORS
+                .cors(cors -> {})
 
+                // ✅ Authorization Rules
+                .authorizeHttpRequests(auth -> auth
+
+                        // ⭐ VERY IMPORTANT — AUTH endpoints PUBLIC
+                        .requestMatchers(
+                                "/auth/**",          // login + register
+                                "/error",            // spring error path
+
+                                // Swagger
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
@@ -43,15 +47,16 @@ public class SecurityConfig {
                                 "/webjars/**"
                         ).permitAll()
 
+                        // ✅ everything else protected
                         .anyRequest().authenticated()
                 )
 
-                // ✅ Stateless session
+                // ✅ Stateless JWT sessions
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-                // ✅ JWT filter
+                // ✅ Add JWT filter BEFORE UsernamePassword filter
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
@@ -60,7 +65,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // ✅ Password encoder
+    // ✅ Password encoder bean
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
