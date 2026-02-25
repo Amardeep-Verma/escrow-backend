@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -30,23 +31,31 @@ public class User implements UserDetails {
 
     private String password;
 
-    private Role role;   // ✅ ENUM instead of String
+    // ✅ Role ENUM (BUYER, SELLER, ADMIN)
+    private Role role;
 
-    // ===============================
-    // Spring Security Methods
-    // ===============================
+    // =====================================
+    // Spring Security Authorization
+    // =====================================
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
+
+        // Spring expects ROLE_ prefix internally
         return List.of(
-                new SimpleGrantedAuthority(role.name())
+                new SimpleGrantedAuthority("ROLE_" + role.name())
         );
     }
 
+    // username = email
     @Override
     public String getUsername() {
         return email;
     }
+
+    // =====================================
+    // Account Status (all true for now)
+    // =====================================
 
     @Override
     public boolean isAccountNonExpired() {

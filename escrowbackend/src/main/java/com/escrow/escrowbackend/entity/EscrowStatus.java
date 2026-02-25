@@ -1,7 +1,12 @@
 package com.escrow.escrowbackend.entity;
 
 public enum EscrowStatus {
+
     CREATED,
+    ACCEPTED,
     FUNDED,
-    RELEASED
+    DELIVERED,
+    RELEASED,
+    DISPUTED,
+    CANCELLED   // ⭐ ADD THIS
 }
