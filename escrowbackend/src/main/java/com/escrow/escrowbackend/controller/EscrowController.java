@@ -4,7 +4,9 @@ import com.escrow.escrowbackend.common.ApiResponse;
 import com.escrow.escrowbackend.dto.CreateEscrowRequest;
 import com.escrow.escrowbackend.entity.Escrow;
 import com.escrow.escrowbackend.service.EscrowService;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -13,15 +15,17 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/escrow")
+@RequestMapping("/api/escrows")   // ⭐ plural REST naming
 @RequiredArgsConstructor
 public class EscrowController {
 
     private final EscrowService escrowService;
 
+    // =====================================================
     // ✅ CREATE ESCROW (BUYER ONLY)
+    // =====================================================
     @PreAuthorize("hasRole('BUYER')")
-    @PostMapping("/create")
+    @PostMapping
     public ResponseEntity<ApiResponse<Escrow>> createEscrow(
             Authentication authentication,
             @RequestBody CreateEscrowRequest request
@@ -41,7 +45,9 @@ public class EscrowController {
         );
     }
 
-    // ✅ GET BUYER ESCROWS
+    // =====================================================
+    // ✅ BUYER → VIEW HIS ESCROWS
+    // =====================================================
     @PreAuthorize("hasRole('BUYER')")
     @GetMapping("/buyer")
     public ResponseEntity<ApiResponse<List<Escrow>>> getBuyerEscrows(
@@ -58,7 +64,9 @@ public class EscrowController {
         );
     }
 
-    // ✅ GET SELLER ESCROWS
+    // =====================================================
+    // ✅ SELLER → VIEW HIS ESCROWS
+    // =====================================================
     @PreAuthorize("hasRole('SELLER')")
     @GetMapping("/seller")
     public ResponseEntity<ApiResponse<List<Escrow>>> getSellerEscrows(
@@ -75,10 +83,12 @@ public class EscrowController {
         );
     }
 
+    // =====================================================
     // ✅ SELLER SHIPS PRODUCT
+    // =====================================================
     @PreAuthorize("hasRole('SELLER')")
-    @PutMapping("/ship/{id}")
-    public ResponseEntity<ApiResponse<Escrow>> updateShipment(
+    @PutMapping("/{id}/ship")
+    public ResponseEntity<ApiResponse<Escrow>> shipProduct(
             @PathVariable String id,
             Authentication authentication
     ) {
@@ -89,13 +99,15 @@ public class EscrowController {
                 escrowService.updateShipment(id, sellerEmail);
 
         return ResponseEntity.ok(
-                new ApiResponse<>(true, "Shipment updated", escrow)
+                new ApiResponse<>(true, "Product shipped successfully", escrow)
         );
     }
 
+    // =====================================================
     // ✅ BUYER CONFIRMS DELIVERY
+    // =====================================================
     @PreAuthorize("hasRole('BUYER')")
-    @PutMapping("/confirm/{id}")
+    @PutMapping("/{id}/confirm")
     public ResponseEntity<ApiResponse<Escrow>> confirmDelivery(
             @PathVariable String id,
             Authentication authentication
@@ -107,7 +119,7 @@ public class EscrowController {
                 escrowService.confirmDelivery(id, buyerEmail);
 
         return ResponseEntity.ok(
-                new ApiResponse<>(true, "Delivery confirmed", escrow)
+                new ApiResponse<>(true, "Delivery confirmed & payment released", escrow)
         );
     }
 }
