@@ -2,10 +2,12 @@ package com.escrow.escrowbackend.controller;
 
 import com.escrow.escrowbackend.entity.Escrow;
 import com.escrow.escrowbackend.entity.EscrowStatus;
+import com.escrow.escrowbackend.entity.User;
 import com.escrow.escrowbackend.repository.EscrowRepository;
 import com.escrow.escrowbackend.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,6 +15,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')") // ✅ Entire controller secured
 public class AdminController {
 
     private final UserRepository userRepository;
@@ -22,7 +25,7 @@ public class AdminController {
     // ✅ Get all users
     // ===================================
     @GetMapping("/users")
-    public Object getAllUsers() {
+    public List<User> getAllUsers() {
         return userRepository.findAll();
     }
 
@@ -43,7 +46,6 @@ public class AdminController {
         Escrow escrow = escrowRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Escrow not found"));
 
-        // ✅ FIXED LINE
         escrow.setEscrowStatus(EscrowStatus.RELEASED);
 
         return escrowRepository.save(escrow);
@@ -61,5 +63,14 @@ public class AdminController {
         escrow.setEscrowStatus(EscrowStatus.CANCELLED);
 
         return escrowRepository.save(escrow);
+    }
+
+    // ===================================
+    // ✅ Delete user (Admin power)
+    // ===================================
+    @DeleteMapping("/users/{id}")
+    public String deleteUser(@PathVariable String id) {
+        userRepository.deleteById(id);
+        return "User deleted successfully";
     }
 }
