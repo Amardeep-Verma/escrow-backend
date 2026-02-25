@@ -1,5 +1,6 @@
 package com.escrow.escrowbackend.controller;
 
+import com.escrow.escrowbackend.dto.UserDTO;
 import com.escrow.escrowbackend.entity.Escrow;
 import com.escrow.escrowbackend.entity.EscrowStatus;
 import com.escrow.escrowbackend.entity.User;
@@ -25,8 +26,17 @@ public class AdminController {
     // ✅ Get all users
     // ===================================
     @GetMapping("/users")
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    public List<UserDTO> getAllUsers() {
+
+        return userRepository.findAll()
+                .stream()
+                .map(user -> new UserDTO(
+                        user.getId(),
+                        user.getName(),
+                        user.getEmail(),
+                        user.getRole().name()
+                ))
+                .toList();
     }
 
     // ===================================
