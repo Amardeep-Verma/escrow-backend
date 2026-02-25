@@ -4,10 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class EscrowbackendApplication {
+public class EscrowBackendApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(EscrowbackendApplication.class, args);
+		SpringApplication.run(EscrowBackendApplication.class, args);
 	}
 
 }

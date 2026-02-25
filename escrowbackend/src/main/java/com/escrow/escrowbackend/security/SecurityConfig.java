@@ -22,43 +22,38 @@ import org.springframework.web.cors.CorsConfigurationSource;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-
-    // ✅ Inject CORS configuration bean
     private final CorsConfigurationSource corsConfigurationSource;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                // ✅ Disable CSRF for REST API
+                // ✅ REST API → disable csrf
                 .csrf(csrf -> csrf.disable())
 
-                // ✅ IMPORTANT: Attach CorsConfig to Spring Security
+                // ✅ attach CORS config
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
 
-                // ✅ Authorization Rules
+                // ✅ AUTH RULES
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/auth/**",
+                                "/api/auth/**",   // ⭐ FIXED
                                 "/error",
-
-                                // Swagger endpoints
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
                                 "/swagger-resources/**",
                                 "/webjars/**"
                         ).permitAll()
-
                         .anyRequest().authenticated()
                 )
 
-                // ✅ Stateless JWT session
+                // ✅ stateless JWT
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-                // ✅ JWT Filter
+                // ✅ JWT filter
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
@@ -67,7 +62,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // ✅ Password encoder
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

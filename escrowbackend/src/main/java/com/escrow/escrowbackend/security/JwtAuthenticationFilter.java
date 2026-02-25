@@ -30,12 +30,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String path = request.getServletPath();
 
-        // ⭐ IMPORTANT: allow browser preflight requests
         if (HttpMethod.OPTIONS.matches(request.getMethod())) {
             return true;
         }
 
-        return path.startsWith("/auth")
+        return path.startsWith("/api/auth")   // ⭐ FIXED
                 || path.startsWith("/error")
                 || path.startsWith("/v3/api-docs")
                 || path.startsWith("/swagger-ui")
