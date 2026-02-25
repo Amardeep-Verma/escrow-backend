@@ -2,6 +2,7 @@ package com.escrow.escrowbackend.entity;
 
 import lombok.*;
 import java.time.LocalDateTime;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -23,9 +24,7 @@ public class Escrow {
 
     private String productName;
 
-    // PENDING, SHIPPED, DELIVERED
-    private String shipmentStatus;
-
-    // CREATED, FUNDED, RELEASED
-    private String escrowStatus;
+    // ✅ ENUMS instead of Strings
+    private ShipmentStatus shipmentStatus;
+    private EscrowStatus escrowStatus;
 }
