@@ -85,7 +85,7 @@ public class SecurityConfig {
                         .hasRole("ADMIN")
 
                         // ---------- ESCROW USERS ----------
-                        .requestMatchers("/api/escrow/**")
+                        .requestMatchers("/api/escrows/**")
                         .hasAnyRole("BUYER", "SELLER", "ADMIN")
 
                         // ---------- OTHERS ----------
