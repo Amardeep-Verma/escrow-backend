@@ -19,7 +19,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity   // enables @PreAuthorize
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -30,22 +30,13 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-
-                // ✅ Disable CSRF (REST API)
                 .csrf(csrf -> csrf.disable())
-
-                // ✅ Enable CORS
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
 
-                // ✅ Authorization Rules
                 .authorizeHttpRequests(auth -> auth
-
-                        // PUBLIC ROUTES
                         .requestMatchers(
                                 "/api/auth/**",
                                 "/error",
-
-                                // Swagger
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
@@ -53,24 +44,19 @@ public class SecurityConfig {
                                 "/webjars/**"
                         ).permitAll()
 
-                        // ✅ ADMIN ONLY ROUTES
-                        .requestMatchers("/api/admin/**")
-                        .hasRole("ADMIN")
+                        // ✅ ONLY AUTHENTICATED (ROLE checked in controller)
+                        .requestMatchers("/api/admin/**").authenticated()
 
-                        // ✅ USER ROUTES (logged in users)
                         .requestMatchers("/api/escrow/**")
                         .hasAnyRole("USER", "ADMIN")
 
-                        // everything else requires login
                         .anyRequest().authenticated()
                 )
 
-                // ✅ Stateless session (JWT)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-                // ✅ Add JWT Filter
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
@@ -79,7 +65,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // ✅ Password Encoder Bean
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
