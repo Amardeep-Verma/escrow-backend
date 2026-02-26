@@ -1,15 +1,18 @@
 package com.escrow.escrowbackend.security;
 
-import com.escrow.escrowbackend.entity.User;
-import com.escrow.escrowbackend.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -20,21 +23,22 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final UserRepository userRepository;
+    private final CustomUserDetailsService userDetailsService;
 
-    /**
-     * ✅ Skip JWT filter for public + preflight requests
-     */
+    // =====================================================
+    // SKIP PUBLIC ROUTES
+    // =====================================================
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
 
         String path = request.getServletPath();
 
+        // Allow preflight requests
         if (HttpMethod.OPTIONS.matches(request.getMethod())) {
             return true;
         }
 
-        return path.startsWith("/api/auth")   // ⭐ FIXED
+        return path.startsWith("/api/auth")
                 || path.startsWith("/error")
                 || path.startsWith("/v3/api-docs")
                 || path.startsWith("/swagger-ui")
@@ -42,47 +46,62 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || path.startsWith("/webjars");
     }
 
-    /**
-     * ✅ JWT validation logic
-     */
+    // =====================================================
+    // JWT AUTHENTICATION
+    // =====================================================
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
+    ) throws ServletException, IOException {
 
         final String authHeader = request.getHeader("Authorization");
 
-        // ✅ No token → continue request normally
+        // ✅ No token → continue request
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
+            // Extract token
             String token = authHeader.substring(7);
+
+            // Extract email from JWT
             String email = jwtService.extractEmail(token);
 
+            // Authenticate only if not already authenticated
             if (email != null &&
                     SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                User user = userRepository.findByEmail(email).orElse(null);
+                // Load user from DB (includes ROLE authority)
+                UserDetails userDetails =
+                        userDetailsService.loadUserByUsername(email);
 
-                if (user != null && jwtService.isTokenValid(token)) {
+                // Validate token
+                if (jwtService.isTokenValid(token)) {
 
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
-                                    user,
+                                    userDetails,
                                     null,
-                                    user.getAuthorities()
+                                    userDetails.getAuthorities() // ✅ ROLE_ADMIN here
                             );
 
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                    authToken.setDetails(
+                            new WebAuthenticationDetailsSource()
+                                    .buildDetails(request)
+                    );
+
+                    // Set authentication in context
+                    SecurityContextHolder.getContext()
+                            .setAuthentication(authToken);
                 }
             }
 
         } catch (Exception ex) {
-            // ✅ Never break request because of bad token
+            // Clear context if anything fails
             SecurityContextHolder.clearContext();
         }
 

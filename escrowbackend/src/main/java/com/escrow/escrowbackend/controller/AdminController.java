@@ -16,7 +16,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
-@PreAuthorize("hasAuthority('ADMIN')") // ✅ FIXED
+
+// ✅ FIXED — must include ROLE_ prefix
+
+
 @CrossOrigin(origins = "*")
 public class AdminController {
 

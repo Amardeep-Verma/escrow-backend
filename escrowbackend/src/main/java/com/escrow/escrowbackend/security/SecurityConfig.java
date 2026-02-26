@@ -4,11 +4,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 
 import org.springframework.security.config.http.SessionCreationPolicy;
+
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -23,14 +27,40 @@ import org.springframework.web.cors.CorsConfigurationSource;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    // ✅ JWT filter
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    // ✅ CORS config
     private final CorsConfigurationSource corsConfigurationSource;
 
+    // ✅ NEW — UserDetailsService (IMPORTANT)
+    private final CustomUserDetailsService userDetailsService;
+
+
+    // =====================================================
+    // AUTHENTICATION PROVIDER (ROLE FIX HAPPENS HERE)
+    // =====================================================
+    @Bean
+    public AuthenticationProvider authenticationProvider() {
+
+        DaoAuthenticationProvider authProvider =
+                new DaoAuthenticationProvider();
+
+        authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+
+        return authProvider;
+    }
+
+
+    // =====================================================
+    // SECURITY FILTER CHAIN
+    // =====================================================
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                // ✅ Disable CSRF (REST API)
+                // ✅ Disable CSRF for REST API
                 .csrf(csrf -> csrf.disable())
 
                 // ✅ Enable CORS
@@ -39,7 +69,7 @@ public class SecurityConfig {
                 // ✅ Authorization Rules
                 .authorizeHttpRequests(auth -> auth
 
-                        // ---------- PUBLIC ROUTES ----------
+                        // ---------- PUBLIC ----------
                         .requestMatchers(
                                 "/api/auth/**",
                                 "/error",
@@ -50,7 +80,7 @@ public class SecurityConfig {
                                 "/webjars/**"
                         ).permitAll()
 
-                        // ---------- ADMIN ONLY ----------
+                        // ---------- ADMIN ----------
                         .requestMatchers("/api/admin/**")
                         .hasRole("ADMIN")
 
@@ -58,16 +88,19 @@ public class SecurityConfig {
                         .requestMatchers("/api/escrow/**")
                         .hasAnyRole("BUYER", "SELLER", "ADMIN")
 
-                        // ---------- EVERYTHING ELSE ----------
+                        // ---------- OTHERS ----------
                         .anyRequest().authenticated()
                 )
 
-                // ✅ Stateless JWT Session
+                // ✅ Stateless JWT session
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-                // ✅ Add JWT Filter
+                // ✅ Register authentication provider
+                .authenticationProvider(authenticationProvider())
+
+                // ✅ Add JWT filter
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
@@ -76,7 +109,10 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // ✅ Password Encoder Bean
+
+    // =====================================================
+    // PASSWORD ENCODER
+    // =====================================================
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
