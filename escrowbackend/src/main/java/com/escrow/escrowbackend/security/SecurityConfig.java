@@ -30,10 +30,16 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
+                // ✅ Disable CSRF (REST API)
                 .csrf(csrf -> csrf.disable())
+
+                // ✅ Enable CORS
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
 
+                // ✅ Authorization Rules
                 .authorizeHttpRequests(auth -> auth
+
+                        // ---------- PUBLIC ROUTES ----------
                         .requestMatchers(
                                 "/api/auth/**",
                                 "/error",
@@ -44,19 +50,24 @@ public class SecurityConfig {
                                 "/webjars/**"
                         ).permitAll()
 
-                        // ✅ ONLY AUTHENTICATED (ROLE checked in controller)
-                        .requestMatchers("/api/admin/**").authenticated()
+                        // ---------- ADMIN ONLY ----------
+                        .requestMatchers("/api/admin/**")
+                        .hasRole("ADMIN")
 
+                        // ---------- ESCROW USERS ----------
                         .requestMatchers("/api/escrow/**")
-                        .hasAnyRole("USER", "ADMIN")
+                        .hasAnyRole("BUYER", "SELLER", "ADMIN")
 
+                        // ---------- EVERYTHING ELSE ----------
                         .anyRequest().authenticated()
                 )
 
+                // ✅ Stateless JWT Session
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
+                // ✅ Add JWT Filter
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
@@ -65,6 +76,7 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // ✅ Password Encoder Bean
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
