@@ -15,15 +15,13 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/escrows")   // ⭐ plural REST naming
+@RequestMapping("/api/escrows")
 @RequiredArgsConstructor
 public class EscrowController {
 
     private final EscrowService escrowService;
 
-    // =====================================================
-    // ✅ CREATE ESCROW (BUYER ONLY)
-    // =====================================================
+    // ================= CREATE ESCROW (BUYER)
     @PreAuthorize("hasRole('BUYER')")
     @PostMapping
     public ResponseEntity<ApiResponse<Escrow>> createEscrow(
@@ -45,47 +43,37 @@ public class EscrowController {
         );
     }
 
-    // =====================================================
-    // ✅ BUYER → VIEW HIS ESCROWS
-    // =====================================================
+    // ================= BUYER ESCROWS
     @PreAuthorize("hasRole('BUYER')")
     @GetMapping("/buyer")
     public ResponseEntity<ApiResponse<List<Escrow>>> getBuyerEscrows(
             Authentication authentication
     ) {
-
-        String buyerEmail = authentication.getName();
-
-        List<Escrow> escrows =
-                escrowService.getEscrowsByBuyer(buyerEmail);
-
         return ResponseEntity.ok(
-                new ApiResponse<>(true, "Buyer escrows fetched", escrows)
+                new ApiResponse<>(
+                        true,
+                        "Buyer escrows fetched",
+                        escrowService.getEscrowsByBuyer(authentication.getName())
+                )
         );
     }
 
-    // =====================================================
-    // ✅ SELLER → VIEW HIS ESCROWS
-    // =====================================================
+    // ================= SELLER ESCROWS
     @PreAuthorize("hasRole('SELLER')")
     @GetMapping("/seller")
     public ResponseEntity<ApiResponse<List<Escrow>>> getSellerEscrows(
             Authentication authentication
     ) {
-
-        String sellerEmail = authentication.getName();
-
-        List<Escrow> escrows =
-                escrowService.getEscrowsBySeller(sellerEmail);
-
         return ResponseEntity.ok(
-                new ApiResponse<>(true, "Seller escrows fetched", escrows)
+                new ApiResponse<>(
+                        true,
+                        "Seller escrows fetched",
+                        escrowService.getEscrowsBySeller(authentication.getName())
+                )
         );
     }
 
-    // =====================================================
-    // ✅ SELLER SHIPS PRODUCT
-    // =====================================================
+    // ================= SELLER SHIPS
     @PreAuthorize("hasRole('SELLER')")
     @PutMapping("/{id}/ship")
     public ResponseEntity<ApiResponse<Escrow>> shipProduct(
@@ -93,19 +81,15 @@ public class EscrowController {
             Authentication authentication
     ) {
 
-        String sellerEmail = authentication.getName();
-
         Escrow escrow =
-                escrowService.updateShipment(id, sellerEmail);
+                escrowService.updateShipment(id, authentication.getName());
 
         return ResponseEntity.ok(
                 new ApiResponse<>(true, "Product shipped successfully", escrow)
         );
     }
 
-    // =====================================================
-    // ✅ BUYER CONFIRMS DELIVERY
-    // =====================================================
+    // ================= BUYER CONFIRM DELIVERY
     @PreAuthorize("hasRole('BUYER')")
     @PutMapping("/{id}/confirm")
     public ResponseEntity<ApiResponse<Escrow>> confirmDelivery(
@@ -113,13 +97,27 @@ public class EscrowController {
             Authentication authentication
     ) {
 
-        String buyerEmail = authentication.getName();
-
         Escrow escrow =
-                escrowService.confirmDelivery(id, buyerEmail);
+                escrowService.confirmDelivery(id, authentication.getName());
 
         return ResponseEntity.ok(
-                new ApiResponse<>(true, "Delivery confirmed & payment released", escrow)
+                new ApiResponse<>(true, "Delivery confirmed", escrow)
+        );
+    }
+
+    // ================= BUYER RELEASE PAYMENT
+    @PreAuthorize("hasRole('BUYER')")
+    @PutMapping("/{id}/release")
+    public ResponseEntity<ApiResponse<Escrow>> releasePayment(
+            @PathVariable String id,
+            Authentication authentication
+    ) {
+
+        Escrow escrow =
+                escrowService.releasePayment(id, authentication.getName());
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(true, "Payment released successfully", escrow)
         );
     }
 }

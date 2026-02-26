@@ -13,12 +13,12 @@ public class EscrowStateMachine {
             throw new RuntimeException("Product already shipped");
         }
 
-        if (escrow.getEscrowStatus() != EscrowStatus.CREATED) {
-            throw new RuntimeException("Escrow must be CREATED");
+        // ✅ Seller can ship only after payment funded
+        if (escrow.getEscrowStatus() != EscrowStatus.FUNDED) {
+            throw new RuntimeException("Payment not funded yet");
         }
 
         escrow.setShipmentStatus(ShipmentStatus.SHIPPED);
-        escrow.setEscrowStatus(EscrowStatus.FUNDED);
     }
 
     // ======================
@@ -30,11 +30,22 @@ public class EscrowStateMachine {
             throw new RuntimeException("Product not shipped yet");
         }
 
-        if (escrow.getEscrowStatus() == EscrowStatus.RELEASED) {
-            throw new RuntimeException("Already released");
+        if (escrow.getEscrowStatus() != EscrowStatus.FUNDED) {
+            throw new RuntimeException("Invalid escrow state");
         }
 
         escrow.setShipmentStatus(ShipmentStatus.DELIVERED);
+        escrow.setEscrowStatus(EscrowStatus.DELIVERED);
+    }
+
+    public static void release(Escrow escrow) {
+
+        if (escrow.getEscrowStatus() != EscrowStatus.DELIVERED) {
+            throw new RuntimeException("Delivery not confirmed yet");
+        }
+
         escrow.setEscrowStatus(EscrowStatus.RELEASED);
     }
+
+
 }

@@ -17,6 +17,8 @@ public class EscrowService {
 
     private final EscrowRepository escrowRepository;
     private final UserRepository userRepository;
+    private final WebSocketService webSocketService;
+    private final NotificationService notificationService; // ✅ NEW
 
     // =========================
     // CREATE ESCROW
@@ -36,7 +38,17 @@ public class EscrowService {
                 .escrowStatus(EscrowStatus.CREATED)
                 .build();
 
-        return escrowRepository.save(escrow);
+        Escrow saved = escrowRepository.save(escrow);
+
+        // 🔔 Notify seller
+        notificationService.createNotification(
+                sellerEmail,
+                "🛒 New escrow created for " + productName
+        );
+
+        webSocketService.sendEscrowUpdate(saved);
+
+        return saved;
     }
 
     // =========================
@@ -62,10 +74,19 @@ public class EscrowService {
             throw new RuntimeException("Unauthorized seller");
         }
 
-        // ⭐ STATE MACHINE
         EscrowStateMachine.ship(escrow);
 
-        return escrowRepository.save(escrow);
+        Escrow updated = escrowRepository.save(escrow);
+
+        // 🔔 Notify buyer
+        notificationService.createNotification(
+                escrow.getBuyerEmail(),
+                "📦 Seller shipped: " + escrow.getProductName()
+        );
+
+        webSocketService.sendEscrowUpdate(updated);
+
+        return updated;
     }
 
     // =========================
@@ -80,9 +101,45 @@ public class EscrowService {
             throw new RuntimeException("Unauthorized buyer");
         }
 
-        // ⭐ STATE MACHINE
         EscrowStateMachine.confirmDelivery(escrow);
 
-        return escrowRepository.save(escrow);
+        Escrow updated = escrowRepository.save(escrow);
+
+        // 🔔 Notify seller
+        notificationService.createNotification(
+                escrow.getSellerEmail(),
+                "✅ Buyer confirmed delivery for " + escrow.getProductName()
+        );
+
+        webSocketService.sendEscrowUpdate(updated);
+
+        return updated;
+    }
+
+    // =========================
+    // RELEASE PAYMENT
+    // =========================
+    public Escrow releasePayment(String escrowId, String buyerEmail) {
+
+        Escrow escrow = escrowRepository.findById(escrowId)
+                .orElseThrow(() -> new RuntimeException("Escrow not found"));
+
+        if (!escrow.getBuyerEmail().equals(buyerEmail)) {
+            throw new RuntimeException("Unauthorized buyer");
+        }
+
+        EscrowStateMachine.release(escrow);
+
+        Escrow updated = escrowRepository.save(escrow);
+
+        // 🔔 Notify seller
+        notificationService.createNotification(
+                escrow.getSellerEmail(),
+                "💰 Payment released for " + escrow.getProductName()
+        );
+
+        webSocketService.sendEscrowUpdate(updated);
+
+        return updated;
     }
 }
