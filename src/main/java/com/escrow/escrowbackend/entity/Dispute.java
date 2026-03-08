@@ -1,45 +1,46 @@
 package com.escrow.escrowbackend.entity;
 
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.Field;
-
-@Document(collection = "disputes")
+@Entity
+@Table(name = "disputes")
 public class Dispute {
     
     @Id
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     
-    @Field(name = "escrow_id")
+    @Column(name = "escrow_id", nullable = false)
     private Long escrowId;
     
-    @Field(name = "buyer_id")
+    @Column(name = "buyer_id", nullable = false)
     private Long buyerId;
     
-    @Field(name = "seller_id")
+    @Column(name = "seller_id", nullable = false)
     private Long sellerId;
     
-    @Field
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private DisputeReason reason;
     
-    @Field
+    @Column(length = 1000)
     private String description;
     
-    @Field(name = "evidence_url")
+    @Column(name = "evidence_url")
     private String evidenceUrl;
     
-    @Field
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private DisputeStatus status = DisputeStatus.OPEN;
     
-    @Field(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
     
-    @Field(name = "resolved_at")
+    @Column(name = "resolved_at")
     private LocalDateTime resolvedAt;
     
-    @Field(name = "resolution_notes")
+    @Column(name = "resolution_notes")
     private String resolutionNotes;
     
     // Constructors
@@ -57,11 +58,11 @@ public class Dispute {
     }
     
     // Getters and Setters
-    public String getId() {
+    public Long getId() {
         return id;
     }
     
-    public void setId(String id) {
+    public void setId(Long id) {
         this.id = id;
     }
     

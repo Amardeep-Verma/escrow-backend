@@ -1,9 +1,10 @@
 package com.escrow.escrowbackend.repository;
 
-import com.escrow.escrowbackend.entity.Notification;
+import java.util.List;
+
 import org.springframework.data.mongodb.repository.MongoRepository;
 
-import java.util.List;
+import com.escrow.escrowbackend.entity.Notification;
 
 public interface NotificationRepository
         extends MongoRepository<Notification, String> {
@@ -11,4 +12,10 @@ public interface NotificationRepository
     List<Notification> findByUserIdOrderByCreatedAtDesc(String userId);
 
     long countByUserIdAndReadFalse(String userId);
+
+    long countByUserId(String userId);
+
+    long countByUserIdAndReadTrue(String userId);
+
+    void deleteByUserId(String userId);
 }

@@ -9,5 +9,6 @@ public enum EscrowStatus {
     RELEASED,
     DISPUTED,
     CANCELLED,
-    REFUNDED//
+    REFUNDED,
+    FROZEN
 }

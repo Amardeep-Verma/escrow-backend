@@ -1,6 +1,8 @@
 package com.escrow.escrowbackend.service;
 
-import com.escrow.escrowbackend.entity.*;
+import com.escrow.escrowbackend.entity.Escrow;
+import com.escrow.escrowbackend.entity.EscrowStatus;
+import com.escrow.escrowbackend.entity.ShipmentStatus;
 
 public class EscrowStateMachine {
 
@@ -59,5 +61,17 @@ public class EscrowStateMachine {
         }
 
         escrow.setEscrowStatus(EscrowStatus.RELEASED);
+    }
+
+    // ======================
+    // CANCEL ESCROW
+    // ======================
+    public static void cancel(Escrow escrow) {
+
+        if (escrow.getEscrowStatus() != EscrowStatus.CREATED) {
+            throw new RuntimeException("Escrow cannot be cancelled in current state");
+        }
+
+        escrow.setEscrowStatus(EscrowStatus.CANCELLED);
     }
 }
