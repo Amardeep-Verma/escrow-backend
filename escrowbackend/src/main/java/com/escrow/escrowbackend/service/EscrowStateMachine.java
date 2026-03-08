@@ -5,6 +5,18 @@ import com.escrow.escrowbackend.entity.*;
 public class EscrowStateMachine {
 
     // ======================
+    // FUND ESCROW (NEW)
+    // ======================
+    public static void fund(Escrow escrow) {
+
+        if (escrow.getEscrowStatus() != EscrowStatus.CREATED) {
+            throw new RuntimeException("Escrow not in CREATED state");
+        }
+
+        escrow.setEscrowStatus(EscrowStatus.FUNDED);
+    }
+
+    // ======================
     // SELLER SHIPS PRODUCT
     // ======================
     public static void ship(Escrow escrow) {
@@ -13,7 +25,6 @@ public class EscrowStateMachine {
             throw new RuntimeException("Product already shipped");
         }
 
-        // ✅ Seller can ship only after payment funded
         if (escrow.getEscrowStatus() != EscrowStatus.FUNDED) {
             throw new RuntimeException("Payment not funded yet");
         }
@@ -38,6 +49,9 @@ public class EscrowStateMachine {
         escrow.setEscrowStatus(EscrowStatus.DELIVERED);
     }
 
+    // ======================
+    // RELEASE PAYMENT
+    // ======================
     public static void release(Escrow escrow) {
 
         if (escrow.getEscrowStatus() != EscrowStatus.DELIVERED) {
@@ -46,6 +60,4 @@ public class EscrowStateMachine {
 
         escrow.setEscrowStatus(EscrowStatus.RELEASED);
     }
-
-
 }

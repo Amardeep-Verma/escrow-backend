@@ -5,8 +5,10 @@ import com.escrow.escrowbackend.entity.Escrow;
 import com.escrow.escrowbackend.entity.EscrowStatus;
 import com.escrow.escrowbackend.repository.EscrowRepository;
 import com.escrow.escrowbackend.repository.UserRepository;
+import com.escrow.escrowbackend.service.AdminLiveService;
 
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -16,15 +18,13 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
-
-// ✅ FIXED — must include ROLE_ prefix
-
-
 @CrossOrigin(origins = "*")
+@PreAuthorize("hasRole('ADMIN')") // ✅ Entire controller secured
 public class AdminController {
 
     private final UserRepository userRepository;
     private final EscrowRepository escrowRepository;
+    private final AdminLiveService adminLiveService; // 🔥 for live updates
 
     // ================= USERS =================
     @GetMapping("/users")
@@ -49,7 +49,7 @@ public class AdminController {
         return ResponseEntity.ok(escrowRepository.findAll());
     }
 
-    // ================= RESOLVE =================
+    // ================= RESOLVE ESCROW =================
     @PutMapping("/resolve/{id}")
     public ResponseEntity<Escrow> resolveEscrow(@PathVariable String id) {
 
@@ -58,10 +58,15 @@ public class AdminController {
 
         escrow.setEscrowStatus(EscrowStatus.RELEASED);
 
-        return ResponseEntity.ok(escrowRepository.save(escrow));
+        Escrow savedEscrow = escrowRepository.save(escrow);
+
+        // 🔥 Send Live Update to Admin Dashboard
+        adminLiveService.sendEscrowUpdate(savedEscrow);
+
+        return ResponseEntity.ok(savedEscrow);
     }
 
-    // ================= CANCEL =================
+    // ================= CANCEL ESCROW =================
     @PutMapping("/cancel/{id}")
     public ResponseEntity<Escrow> cancelEscrow(@PathVariable String id) {
 
@@ -70,7 +75,12 @@ public class AdminController {
 
         escrow.setEscrowStatus(EscrowStatus.CANCELLED);
 
-        return ResponseEntity.ok(escrowRepository.save(escrow));
+        Escrow savedEscrow = escrowRepository.save(escrow);
+
+        // 🔥 Send Live Update
+        adminLiveService.sendEscrowUpdate(savedEscrow);
+
+        return ResponseEntity.ok(savedEscrow);
     }
 
     // ================= DELETE USER =================

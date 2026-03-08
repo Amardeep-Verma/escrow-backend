@@ -4,9 +4,7 @@ import com.escrow.escrowbackend.common.ApiResponse;
 import com.escrow.escrowbackend.dto.CreateEscrowRequest;
 import com.escrow.escrowbackend.entity.Escrow;
 import com.escrow.escrowbackend.service.EscrowService;
-
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -21,7 +19,6 @@ public class EscrowController {
 
     private final EscrowService escrowService;
 
-    // ================= CREATE ESCROW (BUYER)
     @PreAuthorize("hasRole('BUYER')")
     @PostMapping
     public ResponseEntity<ApiResponse<Escrow>> createEscrow(
@@ -35,7 +32,8 @@ public class EscrowController {
                 buyerEmail,
                 request.getSellerEmail(),
                 request.getAmount(),
-                request.getProductName()
+                request.getProductName(),
+                request.getContractAddress()
         );
 
         return ResponseEntity.ok(
@@ -43,7 +41,19 @@ public class EscrowController {
         );
     }
 
-    // ================= BUYER ESCROWS
+    @PreAuthorize("hasRole('BUYER')")
+    @PutMapping("/{id}/fund")
+    public ResponseEntity<ApiResponse<Escrow>> fundEscrow(
+            @PathVariable String id
+    ) {
+
+        Escrow escrow = escrowService.fundEscrow(id);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(true, "Escrow funded successfully", escrow)
+        );
+    }
+
     @PreAuthorize("hasRole('BUYER')")
     @GetMapping("/buyer")
     public ResponseEntity<ApiResponse<List<Escrow>>> getBuyerEscrows(
@@ -58,7 +68,6 @@ public class EscrowController {
         );
     }
 
-    // ================= SELLER ESCROWS
     @PreAuthorize("hasRole('SELLER')")
     @GetMapping("/seller")
     public ResponseEntity<ApiResponse<List<Escrow>>> getSellerEscrows(
@@ -73,7 +82,6 @@ public class EscrowController {
         );
     }
 
-    // ================= SELLER SHIPS
     @PreAuthorize("hasRole('SELLER')")
     @PutMapping("/{id}/ship")
     public ResponseEntity<ApiResponse<Escrow>> shipProduct(
@@ -89,7 +97,6 @@ public class EscrowController {
         );
     }
 
-    // ================= BUYER CONFIRM DELIVERY
     @PreAuthorize("hasRole('BUYER')")
     @PutMapping("/{id}/confirm")
     public ResponseEntity<ApiResponse<Escrow>> confirmDelivery(
@@ -105,7 +112,6 @@ public class EscrowController {
         );
     }
 
-    // ================= BUYER RELEASE PAYMENT
     @PreAuthorize("hasRole('BUYER')")
     @PutMapping("/{id}/release")
     public ResponseEntity<ApiResponse<Escrow>> releasePayment(

@@ -75,7 +75,7 @@ public class SecurityConfig {
                                 "/error",
                                 "/ws/**",
                                 "/api/notifications/**",
-                                "/payment/**",
+
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
@@ -91,6 +91,14 @@ public class SecurityConfig {
                         .requestMatchers("/api/escrows/**")
                         .hasAnyRole("BUYER", "SELLER", "ADMIN")
 
+                        .requestMatchers("/api/disputes/raise")
+                        .hasAnyRole("BUYER","SELLER")
+
+                        .requestMatchers("/api/disputes/all")
+                        .hasRole("ADMIN")
+
+                        .requestMatchers("/api/disputes/resolve")
+                        .hasRole("ADMIN")
                         // ---------- OTHERS ----------
                         .anyRequest().authenticated()
                 )

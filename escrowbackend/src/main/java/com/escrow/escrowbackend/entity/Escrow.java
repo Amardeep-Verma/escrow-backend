@@ -21,9 +21,9 @@ public class Escrow {
 
     private LocalDateTime createdAt;
     private Double amount;
-
+    private String contractAddress;
     private String productName;
-
+    private String productDescription;
     // ✅ ENUMS instead of Strings
     private ShipmentStatus shipmentStatus;
     private EscrowStatus escrowStatus;

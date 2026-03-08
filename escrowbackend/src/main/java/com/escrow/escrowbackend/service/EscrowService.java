@@ -1,7 +1,5 @@
 package com.escrow.escrowbackend.service;
 
-import com.escrow.escrowbackend.entity.EscrowStatus;
-import com.escrow.escrowbackend.entity.ShipmentStatus;
 import com.escrow.escrowbackend.entity.*;
 import com.escrow.escrowbackend.repository.EscrowRepository;
 import com.escrow.escrowbackend.repository.UserRepository;
@@ -18,7 +16,8 @@ public class EscrowService {
     private final EscrowRepository escrowRepository;
     private final UserRepository userRepository;
     private final WebSocketService webSocketService;
-    private final NotificationService notificationService; // ✅ NEW
+    private final NotificationService notificationService;
+    private final EmailService emailService;
 
     // =========================
     // CREATE ESCROW
@@ -26,13 +25,21 @@ public class EscrowService {
     public Escrow createEscrow(String buyerEmail,
                                String sellerEmail,
                                Double amount,
-                               String productName) {
+                               String productName,
+                               String contractAddress) {
+
+        User buyer = userRepository.findByEmail(buyerEmail)
+                .orElseThrow(() -> new RuntimeException("Buyer not found"));
+
+        User seller = userRepository.findByEmail(sellerEmail)
+                .orElseThrow(() -> new RuntimeException("Seller not found"));
 
         Escrow escrow = Escrow.builder()
                 .buyerEmail(buyerEmail)
                 .sellerEmail(sellerEmail)
                 .amount(amount)
                 .productName(productName)
+                .contractAddress(contractAddress)
                 .createdAt(LocalDateTime.now())
                 .shipmentStatus(ShipmentStatus.PENDING)
                 .escrowStatus(EscrowStatus.CREATED)
@@ -40,15 +47,40 @@ public class EscrowService {
 
         Escrow saved = escrowRepository.save(escrow);
 
-        // 🔔 Notify seller
-        notificationService.createNotification(
+        // SEND EMAIL
+        emailService.sendEscrowCreatedEmail(
                 sellerEmail,
-                "🛒 New escrow created for " + productName
+                productName,
+                amount
+        );
+
+        // OPTIONAL: notify buyer too
+        emailService.sendEscrowCreatedEmail(
+                buyerEmail,
+                productName,
+                amount
         );
 
         webSocketService.sendEscrowUpdate(saved);
 
         return saved;
+    }
+
+    // =========================
+    // FUND ESCROW (NEW)
+    // =========================
+    public Escrow fundEscrow(String escrowId) {
+
+        Escrow escrow = escrowRepository.findById(escrowId)
+                .orElseThrow(() -> new RuntimeException("Escrow not found"));
+
+        EscrowStateMachine.fund(escrow);
+
+        Escrow updated = escrowRepository.save(escrow);
+
+        webSocketService.sendEscrowUpdate(updated);
+
+        return updated;
     }
 
     // =========================
@@ -70,19 +102,9 @@ public class EscrowService {
         Escrow escrow = escrowRepository.findById(escrowId)
                 .orElseThrow(() -> new RuntimeException("Escrow not found"));
 
-        if (!escrow.getSellerEmail().equals(sellerEmail)) {
-            throw new RuntimeException("Unauthorized seller");
-        }
-
         EscrowStateMachine.ship(escrow);
 
         Escrow updated = escrowRepository.save(escrow);
-
-        // 🔔 Notify buyer
-        notificationService.createNotification(
-                escrow.getBuyerEmail(),
-                "📦 Seller shipped: " + escrow.getProductName()
-        );
 
         webSocketService.sendEscrowUpdate(updated);
 
@@ -97,19 +119,9 @@ public class EscrowService {
         Escrow escrow = escrowRepository.findById(escrowId)
                 .orElseThrow(() -> new RuntimeException("Escrow not found"));
 
-        if (!escrow.getBuyerEmail().equals(buyerEmail)) {
-            throw new RuntimeException("Unauthorized buyer");
-        }
-
         EscrowStateMachine.confirmDelivery(escrow);
 
         Escrow updated = escrowRepository.save(escrow);
-
-        // 🔔 Notify seller
-        notificationService.createNotification(
-                escrow.getSellerEmail(),
-                "✅ Buyer confirmed delivery for " + escrow.getProductName()
-        );
 
         webSocketService.sendEscrowUpdate(updated);
 
@@ -124,19 +136,9 @@ public class EscrowService {
         Escrow escrow = escrowRepository.findById(escrowId)
                 .orElseThrow(() -> new RuntimeException("Escrow not found"));
 
-        if (!escrow.getBuyerEmail().equals(buyerEmail)) {
-            throw new RuntimeException("Unauthorized buyer");
-        }
-
         EscrowStateMachine.release(escrow);
 
         Escrow updated = escrowRepository.save(escrow);
-
-        // 🔔 Notify seller
-        notificationService.createNotification(
-                escrow.getSellerEmail(),
-                "💰 Payment released for " + escrow.getProductName()
-        );
 
         webSocketService.sendEscrowUpdate(updated);
 
